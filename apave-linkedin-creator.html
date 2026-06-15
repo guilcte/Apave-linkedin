@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apave – Créateur de visuels LinkedIn</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1B3A6B;--green:#3CB34A;--light:#F5F7FA;--border:#E0E4EC;
+  --text:#1A1A2E;--muted:#6B7280;--radius:8px;
+}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#E8ECF2;color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{background:var(--navy);color:white;padding:10px 20px;display:flex;align-items:center;gap:14px;flex-shrink:0;z-index:100}
+header h1{font-size:15px;font-weight:600}
+header .sub{font-size:11px;opacity:0.6;margin-left:auto}
+.hint{font-size:11px;background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:20px;margin-left:8px}
+
+.app{display:flex;flex:1;overflow:hidden}
+.panel{background:white;overflow-y:auto;flex-shrink:0}
+.panel-left{width:290px;border-right:1px solid var(--border)}
+.panel-right{width:270px;border-left:1px solid var(--border)}
+.canvas-area{flex:1;display:flex;flex-direction:column;align-items:center;padding:18px;gap:12px;overflow:auto;background:#DDE1E9}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--border);position:sticky;top:0;background:white;z-index:10}
+.tab{flex:1;padding:9px 2px;font-size:10px;font-weight:700;text-align:center;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);letter-spacing:0.4px;text-transform:uppercase}
+.tab.active{color:var(--navy);border-bottom-color:var(--green)}
+.tab-content{display:none;padding:12px}
+.tab-content.active{display:block}
+
+.sec{margin-bottom:16px}
+.sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:7px;padding-bottom:3px;border-bottom:1px solid var(--border)}
+
+label{font-size:11px;color:var(--muted);display:block;margin-bottom:2px;margin-top:7px}
+input[type=text],textarea,select{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;font-family:inherit;color:var(--text);background:white;outline:none}
+input[type=text]:focus,textarea:focus,select:focus{border-color:var(--navy)}
+textarea{resize:vertical;min-height:48px;line-height:1.4}
+input[type=color]{height:30px;padding:2px;cursor:pointer;border-radius:var(--radius);border:1px solid var(--border);width:100%}
+input[type=file]{display:none}
+input[type=range]{width:100%;accent-color:var(--green);margin:3px 0}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.sr{display:flex;align-items:center;gap:6px}
+.sr input{flex:1}
+.sr span{font-size:10px;color:var(--muted);min-width:30px;text-align:right}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:7px 13px;border-radius:var(--radius);font-size:12px;font-weight:600;cursor:pointer;border:none;white-space:nowrap}
+.btn-primary{background:var(--navy);color:white}
+.btn-green{background:var(--green);color:white}
+.btn-outline{background:white;color:var(--navy);border:1px solid var(--navy)}
+.btn-sm{padding:4px 9px;font-size:11px}
+
+.palette{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.sw{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform 0.1s;flex-shrink:0}
+.sw:hover{transform:scale(1.2)}
+.sw.active{border-color:#111;box-shadow:0 0 0 1px white inset}
+
+.theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.theme-card{border:2px solid var(--border);border-radius:var(--radius);padding:7px;cursor:pointer;text-align:center}
+.theme-card:hover{border-color:var(--green)}
+.theme-card.active{border-color:var(--navy)}
+.theme-preview{height:36px;border-radius:4px;margin-bottom:3px}
+.theme-name{font-size:10px;font-weight:600}
+
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0}
+.toggle-label{font-size:12px}
+.toggle{position:relative;width:34px;height:18px;cursor:pointer;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.tslider{position:absolute;inset:0;background:#D1D5DB;border-radius:20px;transition:0.2s}
+.tslider:before{content:'';position:absolute;width:12px;height:12px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.2s}
+.toggle input:checked+.tslider{background:var(--green)}
+.toggle input:checked+.tslider:before{transform:translateX(16px)}
+
+.size-btn{padding:4px 10px;border-radius:var(--radius);font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:white;color:var(--muted)}
+.size-btn.active{background:var(--navy);color:white;border-color:var(--navy)}
+
+.upload-area{border:2px dashed var(--border);border-radius:var(--radius);padding:12px;text-align:center;cursor:pointer;background:var(--light)}
+.upload-area:hover{border-color:var(--green)}
+.upload-area p{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* CANVAS */
+#canvas-wrap{position:relative;box-shadow:0 6px 28px rgba(0,0,0,0.18);border-radius:3px;overflow:hidden;cursor:default;user-select:none}
+canvas{display:block}
+#overlay{position:absolute;top:0;left:0;pointer-events:none}
+
+/* SELECTED ELEMENT INDICATOR */
+.selected-badge{background:var(--navy);color:white;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:white;padding:9px 18px;border-radius:var(--radius);font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:opacity 0.3s;z-index:9999}
+.toast.show{opacity:1}
+
+/* SHAPE GRID */
+.shape-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:4px}
+.shape-btn{border:2px solid var(--border);border-radius:6px;padding:6px 2px;cursor:pointer;text-align:center;font-size:10px;background:white;color:var(--muted)}
+.shape-btn:hover{border-color:var(--green)}
+.shape-btn.active{border-color:var(--navy);color:var(--navy);background:var(--light)}
+.shape-icon{font-size:18px;display:block;margin-bottom:2px}
+
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#C7CBD4;border-radius:8px}
+
+.export-bar{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="width:32px;height:32px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:10px;color:var(--navy)">ap</div>
+  <h1>Créateur de visuels LinkedIn</h1>
+  <span class="hint">🖱️ Clic + glisser pour déplacer les éléments</span>
+  <span class="sub">Apave · Formation</span>
+</header>
+
+<div class="app">
+
+<!-- PANNEAU GAUCHE -->
+<div class="panel panel-left">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('contenu',this)">CONTENU</div>
+    <div class="tab" onclick="switchTab('style',this)">STYLE</div>
+    <div class="tab" onclick="switchTab('elements',this)">ÉLÉMENTS</div>
+  </div>
+
+  <!-- CONTENU -->
+  <div class="tab-content active" id="tab-contenu">
+    <div class="sec">
+      <div class="sec-title">Bannière</div>
+      <label>Titre ligne 1</label><input type="text" id="title1" value="Formation ATEX" oninput="render()">
+      <label>Titre ligne 2</label><input type="text" id="title2" value="Places disponibles !" oninput="render()">
+      <label>Taille titre</label>
+      <div class="sr"><input type="range" min="14" max="80" value="38" id="sl-title" oninput="render();sv('v-title',this.value+'px')"><span id="v-title">38px</span></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Accroche</div>
+      <textarea id="accroche" oninput="render()">ATEX : Êtes-vous toujours à jour ? Renouvelez vos niveaux 1 et 2 pour transformer la contrainte réglementaire en véritable atout sécurité.</textarea>
+      <label>Taille</label>
+      <div class="sr"><input type="range" min="10" max="36" value="15" id="sl-accroche" oninput="render();sv('v-accroche',this.value+'px')"><span id="v-accroche">15px</span></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Formation</div>
+      <label>Code + Nom</label><input type="text" id="formation" value="ATB003 - Recyclage avis d'habilitation ATEX" oninput="render()">
+      <label>Sous-titre</label><input type="text" id="formation2" value="Niveaux 1 et 2" oninput="render()">
+      <label>Taille</label>
+      <div class="sr"><input type="range" min="10" max="32" value="15" id="sl-formation" oninput="render();sv('v-formation',this.value+'px')"><span id="v-formation">15px</span></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Date & Lieu</div>
+      <div class="row2">
+        <div><label>Date</label><input type="text" id="date" value="Le 05/06/2026" oninput="render()"></div>
+        <div><label>Lieu</label><input type="text" id="lieu" value="APAVE Gellainville" oninput="render()"></div>
+      </div>
+      <label>Taille</label>
+      <div class="sr"><input type="range" min="10" max="36" value="16" id="sl-date" oninput="render();sv('v-date',this.value+'px')"><span id="v-date">16px</span></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Contact</div>
+      <label>Téléphone</label><input type="text" id="tel" value="02 37 84 12 20 / Taper 1" oninput="render()">
+      <label>Email</label><input type="text" id="email" value="Formation.chartres@apave.com" oninput="render()">
+      <label>Taille</label>
+      <div class="sr"><input type="range" min="8" max="24" value="13" id="sl-contact" oninput="render();sv('v-contact',this.value+'px')"><span id="v-contact">13px</span></div>
+    </div>
+  </div>
+
+  <!-- STYLE -->
+  <div class="tab-content" id="tab-style">
+    <div class="sec">
+      <div class="sec-title">Thème rapide</div>
+      <div class="theme-grid">
+        <div class="theme-card active" onclick="setTheme('apave',this)"><div class="theme-preview" style="background:linear-gradient(#1B3A6B 50%,white 50%)"></div><div class="theme-name">Apave</div></div>
+        <div class="theme-card" onclick="setTheme('dark',this)"><div class="theme-preview" style="background:linear-gradient(#1A1A2E 50%,#2D2D44 50%)"></div><div class="theme-name">Sombre</div></div>
+        <div class="theme-card" onclick="setTheme('green',this)"><div class="theme-preview" style="background:linear-gradient(#2D6A4F 50%,#F0FBF1 50%)"></div><div class="theme-name">Vert Sécu</div></div>
+        <div class="theme-card" onclick="setTheme('light',this)"><div class="theme-preview" style="background:linear-gradient(#E8ECF2 50%,white 50%);border:1px solid #ddd"></div><div class="theme-name">Clair</div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Couleur bannière</div>
+      <div class="palette" id="pal-banner">
+        <div class="sw active" style="background:#1B3A6B" onclick="sc('banner','#1B3A6B',this,'pal-banner')"></div>
+        <div class="sw" style="background:#3CB34A" onclick="sc('banner','#3CB34A',this,'pal-banner')"></div>
+        <div class="sw" style="background:#1A1A2E" onclick="sc('banner','#1A1A2E',this,'pal-banner')"></div>
+        <div class="sw" style="background:#2D6A4F" onclick="sc('banner','#2D6A4F',this,'pal-banner')"></div>
+        <div class="sw" style="background:#7C3AED" onclick="sc('banner','#7C3AED',this,'pal-banner')"></div>
+        <div class="sw" style="background:#C1440E" onclick="sc('banner','#C1440E',this,'pal-banner')"></div>
+        <div class="sw" style="background:#0369A1" onclick="sc('banner','#0369A1',this,'pal-banner')"></div>
+        <div class="sw" style="background:#374151" onclick="sc('banner','#374151',this,'pal-banner')"></div>
+      </div>
+      <input type="color" value="#1B3A6B" id="banner-custom" oninput="S.bannerColor=this.value;render()">
+    </div>
+    <div class="sec">
+      <div class="sec-title">Texte bannière</div>
+      <div class="palette" id="pal-bt">
+        <div class="sw active" style="background:#FFFFFF;border-color:#ccc" onclick="sc('bt','#FFFFFF',this,'pal-bt')"></div>
+        <div class="sw" style="background:#1B3A6B" onclick="sc('bt','#1B3A6B',this,'pal-bt')"></div>
+        <div class="sw" style="background:#3CB34A" onclick="sc('bt','#3CB34A',this,'pal-bt')"></div>
+        <div class="sw" style="background:#FFD700" onclick="sc('bt','#FFD700',this,'pal-bt')"></div>
+      </div>
+      <input type="color" value="#FFFFFF" id="bt-custom" oninput="S.bannerTextColor=this.value;render()">
+    </div>
+    <div class="sec">
+      <div class="sec-title">Couleur formation</div>
+      <div class="palette" id="pal-form">
+        <div class="sw active" style="background:#3CB34A" onclick="sc('form','#3CB34A',this,'pal-form')"></div>
+        <div class="sw" style="background:#1B3A6B" onclick="sc('form','#1B3A6B',this,'pal-form')"></div>
+        <div class="sw" style="background:#C1440E" onclick="sc('form','#C1440E',this,'pal-form')"></div>
+        <div class="sw" style="background:#7C3AED" onclick="sc('form','#7C3AED',this,'pal-form')"></div>
+        <div class="sw" style="background:#0369A1" onclick="sc('form','#0369A1',this,'pal-form')"></div>
+      </div>
+      <input type="color" value="#3CB34A" id="form-custom" oninput="S.formationColor=this.value;render()">
+    </div>
+    <div class="sec">
+      <div class="sec-title">Fond du visuel</div>
+      <div class="palette" id="pal-bg">
+        <div class="sw active" style="background:#FFFFFF;border-color:#ccc" onclick="sc('bg','#FFFFFF',this,'pal-bg')"></div>
+        <div class="sw" style="background:#F5F7FA" onclick="sc('bg','#F5F7FA',this,'pal-bg')"></div>
+        <div class="sw" style="background:#F0FBF1" onclick="sc('bg','#F0FBF1',this,'pal-bg')"></div>
+        <div class="sw" style="background:#1A1A2E" onclick="sc('bg','#1A1A2E',this,'pal-bg')"></div>
+        <div class="sw" style="background:#EFF6FF" onclick="sc('bg','#EFF6FF',this,'pal-bg')"></div>
+      </div>
+      <input type="color" value="#FFFFFF" id="bg-custom" oninput="S.bgColor=this.value;render()">
+    </div>
+    <div class="sec">
+      <div class="sec-title">Couleurs des textes</div>
+      <label>Accroche</label><input type="color" id="accroche-color" value="#1A1A1A" oninput="render()">
+      <label>Date / Lieu</label><input type="color" id="date-color" value="#1B3A6B" oninput="render()">
+      <label>Contact</label><input type="color" id="contact-color" value="#374151" oninput="render()">
+    </div>
+    <div class="sec">
+      <div class="sec-title">Police</div>
+      <select id="font-family" onchange="render()">
+        <option value="'Segoe UI',Arial,sans-serif">Segoe UI</option>
+        <option value="Arial,Helvetica,sans-serif">Arial</option>
+        <option value="Georgia,serif">Georgia (Serif)</option>
+        <option value="'Trebuchet MS',sans-serif">Trebuchet MS</option>
+        <option value="Verdana,sans-serif">Verdana</option>
+        <option value="Impact,sans-serif">Impact</option>
+        <option value="'Courier New',monospace">Courier New</option>
+      </select>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Style bannière</div>
+      <select id="banner-style" onchange="render()">
+        <option value="full">Pleine largeur</option>
+        <option value="gradient">Dégradé</option>
+        <option value="diagonal">Diagonal</option>
+        <option value="rounded">Arrondi</option>
+        <option value="double">Double bande</option>
+      </select>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Forme de la photo</div>
+      <div class="shape-grid">
+        <div class="shape-btn active" onclick="setShape('rect',this)"><span class="shape-icon">⬛</span>Carré</div>
+        <div class="shape-btn" onclick="setShape('rounded',this)"><span class="shape-icon">▢</span>Arrondi</div>
+        <div class="shape-btn" onclick="setShape('circle',this)"><span class="shape-icon">⚪</span>Cercle</div>
+        <div class="shape-btn" onclick="setShape('halfround',this)"><span class="shape-icon">⬓</span>Demi-arc</div>
+        <div class="shape-btn" onclick="setShape('diagonal',this)"><span class="shape-icon">◤</span>Diagonal</div>
+        <div class="shape-btn" onclick="setShape('diamond',this)"><span class="shape-icon">◆</span>Losange</div>
+        <div class="shape-btn" onclick="setShape('hexagon',this)"><span class="shape-icon">⬡</span>Hexagone</div>
+        <div class="shape-btn" onclick="setShape('star',this)"><span class="shape-icon">⭐</span>Étoile</div>
+        <div class="shape-btn" onclick="setShape('arched',this)"><span class="shape-icon">⌒</span>Arc sup.</div>
+        <div class="shape-btn" onclick="setShape('wave',this)"><span class="shape-icon">〰</span>Vague</div>
+        <div class="shape-btn" onclick="setShape('pill',this)"><span class="shape-icon">💊</span>Pilule</div>
+        <div class="shape-btn" onclick="setShape('pentagon',this)"><span class="shape-icon">⬠</span>Pentagone</div>
+      </div>
+      <label>Rayon arrondi (pour formes arrondies)</label>
+      <div class="sr"><input type="range" min="0" max="200" value="40" id="sl-radius" oninput="render();sv('v-radius',this.value+'px')"><span id="v-radius">40px</span></div>
+    </div>
+  </div>
+
+  <!-- ELEMENTS -->
+  <div class="tab-content" id="tab-elements">
+    <div class="sec">
+      <div class="sec-title">Afficher / Masquer</div>
+      <div class="toggle-row"><span class="toggle-label">Logo</span><label class="toggle"><input type="checkbox" id="show-logo" checked onchange="render()"><span class="tslider"></span></label></div>
+      <div class="toggle-row"><span class="toggle-label">Bannière</span><label class="toggle"><input type="checkbox" id="show-banner" checked onchange="render()"><span class="tslider"></span></label></div>
+      <div class="toggle-row"><span class="toggle-label">Accroche</span><label class="toggle"><input type="checkbox" id="show-accroche" checked onchange="render()"><span class="tslider"></span></label></div>
+      <div class="toggle-row"><span class="toggle-label">Formation</span><label class="toggle"><input type="checkbox" id="show-formation" checked onchange="render()"><span class="tslider"></span></label></div>
+      <div class="toggle-row"><span class="toggle-label">Date & Lieu</span><label class="toggle"><input type="checkbox" id="show-date" checked onchange="render()"><span class="tslider"></span></label></div>
+      <div class="toggle-row"><span class="toggle-label">Photo</span><label class="toggle"><input type="checkbox" id="show-photo" checked onchange="render()"><span class="tslider"></span></label></div>
+      <div class="toggle-row"><span class="toggle-label">Contact</span><label class="toggle"><input type="checkbox" id="show-contact" checked onchange="render()"><span class="tslider"></span></label></div>
+      <div class="toggle-row"><span class="toggle-label">Barre basse</span><label class="toggle"><input type="checkbox" id="show-bar" checked onchange="render()"><span class="tslider"></span></label></div>
+      <div class="toggle-row"><span class="toggle-label">Flèche déco</span><label class="toggle"><input type="checkbox" id="show-arrow" checked onchange="render()"><span class="tslider"></span></label></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Logo</div>
+      <div class="upload-area" onclick="document.getElementById('logo-upload').click()">
+        <div style="font-size:22px">🏷️</div>
+        <p>Importer logo (PNG/SVG)</p>
+      </div>
+      <input type="file" id="logo-upload" accept="image/*" onchange="loadImg(this,'logo')">
+      <label>Largeur logo</label>
+      <div class="sr"><input type="range" min="40" max="300" value="110" id="sl-logo-w" oninput="render();sv('v-logo-w',this.value+'px')"><span id="v-logo-w">110px</span></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Photo principale</div>
+      <div class="upload-area" onclick="document.getElementById('photo-upload').click()">
+        <div style="font-size:22px">📷</div>
+        <p>Importer une photo</p>
+      </div>
+      <input type="file" id="photo-upload" accept="image/*" onchange="loadImg(this,'photo')">
+      <label>Largeur photo (%)</label>
+      <div class="sr"><input type="range" min="15" max="100" value="60" id="sl-photo-w" oninput="render();sv('v-photo-w',this.value+'%')"><span id="v-photo-w">60%</span></div>
+      <label>Hauteur photo (%)</label>
+      <div class="sr"><input type="range" min="10" max="70" value="35" id="sl-photo-h" oninput="render();sv('v-photo-h',this.value+'%')"><span id="v-photo-h">35%</span></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Alignement contact</div>
+      <select id="contact-align" onchange="render()">
+        <option value="right">Droite</option>
+        <option value="center">Centre</option>
+        <option value="left">Gauche</option>
+      </select>
+    </div>
+    <div class="sec">
+      <div class="sec-title">Hauteur bannière</div>
+      <div class="sr"><input type="range" min="8" max="40" value="18" id="sl-banner-h" oninput="render();sv('v-banner-h',this.value+'%')"><span id="v-banner-h">18%</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- CANVAS -->
+<div class="canvas-area">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center">
+    <button class="size-btn active" onclick="setSize(1080,1080,this)">■ 1:1</button>
+    <button class="size-btn" onclick="setSize(1080,1350,this)">▮ 4:5</button>
+    <button class="size-btn" onclick="setSize(1200,628,this)">▬ Paysage</button>
+    <span id="size-label" style="font-size:11px;color:#6B7280;background:white;padding:3px 10px;border-radius:6px;border:1px solid var(--border)">1080 × 1080</span>
+    <span id="selected-info" style="font-size:11px;color:var(--navy);background:#E8F0FB;padding:3px 10px;border-radius:6px;display:none"></span>
+  </div>
+  <div id="canvas-wrap">
+    <canvas id="c"></canvas>
+    <canvas id="overlay"></canvas>
+  </div>
+  <div class="export-bar">
+    <button class="btn btn-green" onclick="exportPNG()">⬇ PNG HD</button>
+    <button class="btn btn-outline" onclick="exportJPG()">⬇ JPEG</button>
+    <button class="btn btn-outline btn-sm" onclick="resetAll()">↺ Réinitialiser</button>
+  </div>
+</div>
+
+<!-- PANNEAU DROIT : position fine -->
+<div class="panel panel-right" id="panel-right">
+  <div style="padding:12px;border-bottom:1px solid var(--border);background:var(--light)">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted)">Position fine (px)</div>
+    <div style="font-size:10px;color:var(--muted);margin-top:3px">Ou glisse directement sur le canvas</div>
+  </div>
+  <div style="padding:12px">
+
+    <div class="sec">
+      <div class="sec-title">🏷️ Logo</div>
+      <label>X</label><div class="sr"><input type="range" min="0" max="900" value="20" id="el-logo-x" oninput="P.logo.x=+this.value;render();sv('v-logo-x',this.value)"><span id="v-logo-x">20</span></div>
+      <label>Y</label><div class="sr"><input type="range" min="0" max="900" value="20" id="el-logo-y" oninput="P.logo.y=+this.value;render();sv('v-logo-y',this.value)"><span id="v-logo-y">20</span></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">📝 Accroche</div>
+      <label>X</label><div class="sr"><input type="range" min="0" max="800" value="40" id="el-acc-x" oninput="P.accroche.x=+this.value;render();sv('v-acc-x',this.value)"><span id="v-acc-x">40</span></div>
+      <label>Y</label><div class="sr"><input type="range" min="0" max="900" value="280" id="el-acc-y" oninput="P.accroche.y=+this.value;render();sv('v-acc-y',this.value)"><span id="v-acc-y">280</span></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">🎓 Formation</div>
+      <label>X</label><div class="sr"><input type="range" min="0" max="900" value="540" id="el-form-x" oninput="P.formation.x=+this.value;render();sv('v-form-x',this.value)"><span id="v-form-x">540</span></div>
+      <label>Y</label><div class="sr"><input type="range" min="0" max="900" value="460" id="el-form-y" oninput="P.formation.y=+this.value;render();sv('v-form-y',this.value)"><span id="v-form-y">460</span></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">📅 Date & Lieu</div>
+      <label>X</label><div class="sr"><input type="range" min="0" max="900" value="55" id="el-date-x" oninput="P.date.x=+this.value;render();sv('v-date-x',this.value)"><span id="v-date-x">55</span></div>
+      <label>Y</label><div class="sr"><input type="range" min="0" max="900" value="615" id="el-date-y" oninput="P.date.y=+this.value;render();sv('v-date-y',this.value)"><span id="v-date-y">615</span></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">📷 Photo</div>
+      <label>X</label><div class="sr"><input type="range" min="0" max="900" value="410" id="el-photo-x" oninput="P.photo.x=+this.value;render();sv('v-photo-x',this.value)"><span id="v-photo-x">410</span></div>
+      <label>Y</label><div class="sr"><input type="range" min="0" max="900" value="562" id="el-photo-y" oninput="P.photo.y=+this.value;render();sv('v-photo-y',this.value)"><span id="v-photo-y">562</span></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">📞 Contact</div>
+      <label>X</label><div class="sr"><input type="range" min="0" max="900" value="900" id="el-cont-x" oninput="P.contact.x=+this.value;render();sv('v-cont-x',this.value)"><span id="v-cont-x">900</span></div>
+      <label>Y</label><div class="sr"><input type="range" min="0" max="1200" value="972" id="el-cont-y" oninput="P.contact.y=+this.value;render();sv('v-cont-y',this.value)"><span id="v-cont-y">972</span></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────
+const S={
+  W:1080,H:1080,SCALE:0.47,
+  bannerColor:'#1B3A6B',bannerTextColor:'#FFFFFF',
+  formationColor:'#3CB34A',bgColor:'#FFFFFF',
+  logoImg:null,photoImg:null,
+  photoShape:'rect',
+};
+
+// Element positions (in canvas coords)
+const P={
+  logo:    {x:20,  y:20},
+  accroche:{x:40,  y:280},
+  formation:{x:540,y:460},
+  date:    {x:55,  y:615},
+  photo:   {x:410, y:562},
+  contact: {x:900, y:972},
+};
+
+// Drag state
+const D={active:false,el:null,ox:0,oy:0,startX:0,startY:0};
+
+// ── HELPERS ───────────────────────────────────────────────────
+const g=id=>document.getElementById(id);
+const val=id=>g(id).value;
+const checked=id=>g(id).checked;
+const num=id=>parseFloat(val(id));
+const sv=(id,v)=>{const el=g(id);if(el)el.textContent=v};
+
+function switchTab(name,el){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  g('tab-'+name).classList.add('active');el.classList.add('active');
+}
+
+function setSize(w,h,btn){
+  S.W=w;S.H=h;
+  document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  g('size-label').textContent=w+' × '+h;
+  // rescale positions proportionally
+  render();updateOverlaySize();
+}
+
+function sc(key,color,el,palId){
+  if(key==='banner')S.bannerColor=color;
+  else if(key==='bt')S.bannerTextColor=color;
+  else if(key==='form')S.formationColor=color;
+  else if(key==='bg')S.bgColor=color;
+  document.querySelectorAll('#'+palId+' .sw').forEach(s=>s.classList.remove('active'));
+  if(el)el.classList.add('active');
+  render();
+}
+
+function setTheme(name,el){
+  document.querySelectorAll('.theme-card').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  const T={
+    apave:{b:'#1B3A6B',bt:'#FFFFFF',f:'#3CB34A',bg:'#FFFFFF'},
+    dark: {b:'#1A1A2E',bt:'#FFFFFF',f:'#A78BFA',bg:'#1A1A2E'},
+    green:{b:'#2D6A4F',bt:'#FFFFFF',f:'#52B788',bg:'#F0FBF1'},
+    light:{b:'#E8ECF2',bt:'#1B3A6B',f:'#1B3A6B',bg:'#FFFFFF'},
+  };
+  const t=T[name];
+  S.bannerColor=t.b;S.bannerTextColor=t.bt;S.formationColor=t.f;S.bgColor=t.bg;
+  render();
+}
+
+function setShape(shape,el){
+  S.photoShape=shape;
+  document.querySelectorAll('.shape-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+function loadImg(input,key){
+  const f=input.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{const img=new Image();img.onload=()=>{S[key+'Img']=img;render();};img.src=e.target.result;};
+  r.readAsDataURL(f);
+}
+
+// ── CANVAS SETUP ─────────────────────────────────────────────
+function updateOverlaySize(){
+  const ov=g('overlay');
+  ov.width=g('c').width;ov.height=g('c').height;
+  ov.style.width=g('c').style.width;ov.style.height=g('c').style.height;
+}
+
+// ── TEXT WRAP ─────────────────────────────────────────────────
+function wrapText(ctx,text,x,y,maxW,lineH,align){
+  ctx.textAlign=align||'left';
+  const lines=text.split('\n');let cy=y;
+  for(const line of lines){
+    const words=line.split(' ');let cur='';
+    for(const w of words){
+      const t=cur?cur+' '+w:w;
+      if(ctx.measureText(t).width>maxW&&cur){ctx.fillText(cur,x,cy);cy+=lineH;cur=w;}else cur=t;
+    }
+    if(cur){ctx.fillText(cur,x,cy);cy+=lineH;}
+  }
+  return cy;
+}
+
+// ── CLIP SHAPES ───────────────────────────────────────────────
+function clipShape(ctx,x,y,w,h,shape,radius){
+  const r=radius||40;
+  ctx.beginPath();
+  switch(shape){
+    case 'rect':ctx.rect(x,y,w,h);break;
+    case 'rounded':rr(ctx,x,y,w,h,r);break;
+    case 'circle':ctx.arc(x+w/2,y+h/2,Math.min(w,h)/2,0,Math.PI*2);break;
+    case 'halfround':
+      ctx.moveTo(x,y+h);ctx.lineTo(x,y+h*0.4);
+      ctx.quadraticCurveTo(x,y,x+w/2,y);ctx.quadraticCurveTo(x+w,y,x+w,y+h*0.4);
+      ctx.lineTo(x+w,y+h);ctx.closePath();break;
+    case 'diagonal':
+      ctx.moveTo(x,y+h*0.15);ctx.lineTo(x+w,y);ctx.lineTo(x+w,y+h);ctx.lineTo(x,y+h);ctx.closePath();break;
+    case 'diamond':{
+      const cx=x+w/2,cy=y+h/2;
+      ctx.moveTo(cx,y);ctx.lineTo(x+w,cy);ctx.lineTo(cx,y+h);ctx.lineTo(x,cy);ctx.closePath();break;}
+    case 'hexagon':{
+      const hx=x+w/2,hy=y+h/2,hr=Math.min(w,h)/2;
+      for(let i=0;i<6;i++){const a=Math.PI/3*i-Math.PI/6;ctx[i?'lineTo':'moveTo'](hx+hr*Math.cos(a),hy+hr*Math.sin(a));}
+      ctx.closePath();break;}
+    case 'star':{
+      const sx=x+w/2,sy=y+h/2,or=Math.min(w,h)/2,ir=or*0.4,sp=5;
+      for(let i=0;i<sp*2;i++){const a=Math.PI/sp*i-Math.PI/2,rr2=i%2?ir:or;ctx[i?'lineTo':'moveTo'](sx+rr2*Math.cos(a),sy+rr2*Math.sin(a));}
+      ctx.closePath();break;}
+    case 'arched':
+      ctx.moveTo(x,y+h);ctx.lineTo(x,y+r);
+      ctx.quadraticCurveTo(x,y,x+r,y);ctx.lineTo(x+w-r,y);
+      ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h);ctx.closePath();break;
+    case 'wave':{
+      const ww=w/4;
+      ctx.moveTo(x,y+h);ctx.lineTo(x,y+h*0.25);
+      ctx.quadraticCurveTo(x+ww,y,x+ww*2,y+h*0.25);
+      ctx.quadraticCurveTo(x+ww*3,y+h*0.5,x+w,y+h*0.25);
+      ctx.lineTo(x+w,y+h);ctx.closePath();break;}
+    case 'pill':rr(ctx,x,y,w,h,Math.min(w,h)/2);break;
+    case 'pentagon':{
+      const px=x+w/2,py=y+h/2,pr=Math.min(w,h)/2;
+      for(let i=0;i<5;i++){const a=Math.PI*2/5*i-Math.PI/2;ctx[i?'lineTo':'moveTo'](px+pr*Math.cos(a),py+pr*Math.sin(a));}
+      ctx.closePath();break;}
+    default:ctx.rect(x,y,w,h);
+  }
+  ctx.clip();
+}
+
+function rr(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+function adjustColor(hex,amt){
+  let rv=parseInt(hex.slice(1,3),16),gv=parseInt(hex.slice(3,5),16),bv=parseInt(hex.slice(5,7),16);
+  rv=Math.min(255,rv+amt);gv=Math.min(255,gv+amt);bv=Math.min(255,bv+amt);
+  return '#'+[rv,gv,bv].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function render(){
+  const W=S.W,H=S.H;
+  const canvas=g('c');
+  canvas.width=W;canvas.height=H;
+  canvas.style.width=Math.round(W*S.SCALE)+'px';
+  canvas.style.height=Math.round(H*S.SCALE)+'px';
+  updateOverlaySize();
+
+  const ctx=canvas.getContext('2d');
+  const font=val('font-family');
+  const bannerStyle=val('banner-style');
+  const bannerH=Math.round(H*num('sl-banner-h')/100);
+  const shapeRadius=num('sl-radius');
+
+  // BG
+  ctx.fillStyle=S.bgColor;ctx.fillRect(0,0,W,H);
+
+  // BANNER
+  if(checked('show-banner')){
+    ctx.save();
+    if(bannerStyle==='full'){ctx.fillStyle=S.bannerColor;ctx.fillRect(0,0,W,bannerH);}
+    else if(bannerStyle==='gradient'){
+      const gr=ctx.createLinearGradient(0,0,W,0);
+      gr.addColorStop(0,S.bannerColor);gr.addColorStop(1,adjustColor(S.bannerColor,50));
+      ctx.fillStyle=gr;ctx.fillRect(0,0,W,bannerH);
+    }else if(bannerStyle==='diagonal'){
+      ctx.fillStyle=S.bannerColor;ctx.beginPath();
+      ctx.moveTo(0,0);ctx.lineTo(W,0);ctx.lineTo(W,bannerH-80);ctx.lineTo(0,bannerH);ctx.fill();
+    }else if(bannerStyle==='rounded'){
+      ctx.fillStyle=S.bannerColor;rr(ctx,0,0,W,bannerH,28);ctx.fill();
+    }else if(bannerStyle==='double'){
+      ctx.fillStyle=S.bannerColor;ctx.fillRect(0,0,W,bannerH-14);
+      ctx.fillStyle=S.formationColor;ctx.fillRect(0,bannerH-14,W,14);
+    }
+    ctx.restore();
+
+    // Banner text
+    ctx.fillStyle=S.bannerTextColor;
+    const tsz=num('sl-title');
+    ctx.font=`bold ${tsz}px ${font}`;ctx.textAlign='center';ctx.textBaseline='alphabetic';
+    const t1=val('title1'),t2=val('title2');
+    if(t1&&t2){ctx.fillText(t1,W/2,bannerH*0.42);ctx.fillText(t2,W/2,bannerH*0.78);}
+    else{ctx.fillText(t1||t2,W/2,bannerH*0.62);}
+  }
+
+  // LOGO
+  if(checked('show-logo')){
+    const lx=P.logo.x,ly=P.logo.y,lw=num('sl-logo-w');
+    ctx.save();
+    if(S.logoImg){
+      const lh=lw*(S.logoImg.height/S.logoImg.width);
+      ctx.drawImage(S.logoImg,lx,ly,lw,lh);
+    }else{
+      ctx.fillStyle=S.bannerTextColor;
+      ctx.beginPath();ctx.arc(lx+28,ly+24,24,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=S.bannerColor;
+      ctx.font=`bold 12px ${font}`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('apave',lx+28,ly+24);
+      ctx.fillStyle=S.bannerTextColor;
+      ctx.font=`bold 20px ${font}`;ctx.textAlign='left';ctx.textBaseline='alphabetic';
+      ctx.fillText('apave',lx+58,ly+34);
+    }
+    ctx.restore();
+  }
+
+  // ACCROCHE
+  if(checked('show-accroche')){
+    const sz=num('sl-accroche');
+    ctx.fillStyle=val('accroche-color');
+    ctx.font=`bold ${sz}px ${font}`;ctx.textBaseline='alphabetic';
+    wrapText(ctx,val('accroche'),P.accroche.x,P.accroche.y,W-P.accroche.x*2,sz*1.5,'left');
+  }
+
+  // FORMATION
+  if(checked('show-formation')){
+    const sz=num('sl-formation');
+    ctx.fillStyle=S.formationColor;ctx.font=`bold ${sz}px ${font}`;
+    ctx.textAlign='center';ctx.textBaseline='alphabetic';
+    ctx.fillText(val('formation'),P.formation.x,P.formation.y);
+    ctx.fillText(val('formation2'),P.formation.x,P.formation.y+sz*1.5);
+  }
+
+  // PHOTO
+  if(checked('show-photo')){
+    const px=P.photo.x,py=P.photo.y;
+    const pw=W*num('sl-photo-w')/100,ph=H*num('sl-photo-h')/100;
+    ctx.save();
+    clipShape(ctx,px,py,pw,ph,S.photoShape,shapeRadius);
+    if(S.photoImg){
+      const sr=S.photoImg.width/S.photoImg.height,dr=pw/ph;
+      let sw,sh,sx,sy;
+      if(sr>dr){sh=S.photoImg.height;sw=sh*dr;sx=(S.photoImg.width-sw)/2;sy=0;}
+      else{sw=S.photoImg.width;sh=sw/dr;sy=(S.photoImg.height-sh)/2;sx=0;}
+      ctx.drawImage(S.photoImg,sx,sy,sw,sh,px,py,pw,ph);
+    }else{
+      ctx.fillStyle='#CBD5E0';ctx.fillRect(px,py,pw,ph);
+      ctx.fillStyle='#94A3B8';ctx.font=`bold ${Math.round(pw*0.05)}px ${font}`;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('📷 Importer une photo',px+pw/2,py+ph/2);
+    }
+    ctx.restore();
+  }
+
+  // DATE & LIEU
+  if(checked('show-date')){
+    const sz=num('sl-date');const dx=P.date.x,dy=P.date.y;
+    ctx.fillStyle=val('date-color');ctx.font=`bold ${sz}px ${font}`;ctx.textBaseline='alphabetic';
+    if(checked('show-arrow')){
+      ctx.strokeStyle=val('date-color');ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(dx,dy-sz*0.7);ctx.lineTo(dx,dy+sz*0.2);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(dx,dy+sz*0.2);ctx.lineTo(dx+sz*0.8,dy+sz*0.2);ctx.stroke();
+      const ax=dx+sz*0.8;
+      ctx.beginPath();ctx.moveTo(ax-5,dy+sz*0.2-6);ctx.lineTo(ax+7,dy+sz*0.2);ctx.lineTo(ax-5,dy+sz*0.2+6);ctx.fill();
+      ctx.textAlign='left';
+      ctx.fillText(val('date'),dx+sz*1.2,dy);ctx.fillText(val('lieu'),dx+sz*1.2,dy+sz*1.5);
+    }else{
+      ctx.textAlign='left';
+      ctx.fillText(val('date'),dx,dy);ctx.fillText(val('lieu'),dx,dy+sz*1.5);
+    }
+  }
+
+  // CONTACT
+  if(checked('show-contact')){
+    const sz=num('sl-contact');const align=val('contact-align');
+    const cx=P.contact.x;const cy=P.contact.y;
+    ctx.fillStyle=val('contact-color');ctx.font=`bold ${sz}px ${font}`;
+    ctx.textAlign=align;ctx.textBaseline='alphabetic';
+    ctx.fillText(val('tel'),cx,cy);ctx.fillText(val('email'),cx,cy+sz*1.5);
+  }
+
+  // BAR
+  if(checked('show-bar')){ctx.fillStyle=S.formationColor;ctx.fillRect(0,H-8,W,8);}
+
+  // Draw selection overlay
+  drawOverlay();
+}
+
+// ── OVERLAY (selection highlight) ────────────────────────────
+function drawOverlay(){
+  const ov=g('overlay');
+  const ctx=ov.getContext('2d');
+  ctx.clearRect(0,0,ov.width,ov.height);
+  if(!D.el)return;
+  const {x,y,w,h}=getElBounds(D.el);
+  if(!w||!h)return;
+  ctx.save();
+  ctx.strokeStyle='#0A66C2';ctx.lineWidth=2;ctx.setLineDash([6,3]);
+  ctx.strokeRect(x-4,y-4,w+8,h+8);
+  ctx.fillStyle='rgba(10,102,194,0.08)';ctx.fillRect(x-4,y-4,w+8,h+8);
+  // corner handles
+  ctx.fillStyle='#0A66C2';ctx.setLineDash([]);
+  [[x-4,y-4],[x+w+4,y-4],[x-4,y+h+4],[x+w+4,y+h+4]].forEach(([hx,hy])=>{
+    ctx.fillRect(hx-4,hy-4,8,8);
+  });
+  ctx.restore();
+}
+
+function getElBounds(elName){
+  const W=S.W,H=S.H;
+  switch(elName){
+    case 'logo':{
+      const lw=num('sl-logo-w');
+      const lh=S.logoImg?lw*(S.logoImg.height/S.logoImg.width):48;
+      return{x:P.logo.x,y:P.logo.y,w:lw,h:lh};}
+    case 'accroche':{
+      const sz=num('sl-accroche');
+      return{x:P.accroche.x,y:P.accroche.y-sz,w:W-P.accroche.x*2,h:sz*5};}
+    case 'formation':{
+      const sz=num('sl-formation');
+      const fw=Math.max(
+        g('c').getContext('2d').measureText(val('formation')).width,
+        g('c').getContext('2d').measureText(val('formation2')).width
+      )||400;
+      return{x:P.formation.x-fw/2,y:P.formation.y-sz,w:fw,h:sz*3};}
+    case 'date':{
+      const sz=num('sl-date');
+      return{x:P.date.x,y:P.date.y-sz,w:300,h:sz*3};}
+    case 'photo':{
+      const pw=W*num('sl-photo-w')/100,ph=H*num('sl-photo-h')/100;
+      return{x:P.photo.x,y:P.photo.y,w:pw,h:ph};}
+    case 'contact':{
+      const sz=num('sl-contact');const align=val('contact-align');
+      const fw=300;const ox=align==='right'?P.contact.x-fw:align==='center'?P.contact.x-fw/2:P.contact.x;
+      return{x:ox,y:P.contact.y-sz,w:fw,h:sz*3};}
+  }
+  return{x:0,y:0,w:0,h:0};
+}
+
+// ── DRAG & DROP ───────────────────────────────────────────────
+function canvasCoords(e){
+  const ov=g('overlay');
+  const rect=ov.getBoundingClientRect();
+  const scaleX=S.W/rect.width,scaleY=S.H/rect.height;
+  const clientX=e.touches?e.touches[0].clientX:e.clientX;
+  const clientY=e.touches?e.touches[0].clientY:e.clientY;
+  return{x:(clientX-rect.left)*scaleX,y:(clientY-rect.top)*scaleY};
+}
+
+function hitTest(cx,cy){
+  const els=['logo','accroche','formation','date','photo','contact'];
+  // reverse order = top element first
+  for(let i=els.length-1;i>=0;i--){
+    const el=els[i];
+    if(!checked('show-'+el)&&el!=='contact'&&el!=='formation'&&el!=='accroche'&&el!=='date')continue;
+    if(el==='logo'&&!checked('show-logo'))continue;
+    if(el==='accroche'&&!checked('show-accroche'))continue;
+    if(el==='formation'&&!checked('show-formation'))continue;
+    if(el==='date'&&!checked('show-date'))continue;
+    if(el==='photo'&&!checked('show-photo'))continue;
+    if(el==='contact'&&!checked('show-contact'))continue;
+    const b=getElBounds(el);
+    if(cx>=b.x&&cx<=b.x+b.w&&cy>=b.y&&cy<=b.y+b.h)return el;
+  }
+  return null;
+}
+
+function syncSliders(elName){
+  const p=P[elName];
+  const sliders={
+    logo:['el-logo-x','el-logo-y'],
+    accroche:['el-acc-x','el-acc-y'],
+    formation:['el-form-x','el-form-y'],
+    date:['el-date-x','el-date-y'],
+    photo:['el-photo-x','el-photo-y'],
+    contact:['el-cont-x','el-cont-y'],
+  };
+  const vals={
+    logo:['v-logo-x','v-logo-y'],
+    accroche:['v-acc-x','v-acc-y'],
+    formation:['v-form-x','v-form-y'],
+    date:['v-date-x','v-date-y'],
+    photo:['v-photo-x','v-photo-y'],
+    contact:['v-cont-x','v-cont-y'],
+  };
+  if(!sliders[elName])return;
+  const [sx,sy]=sliders[elName];const [vx,vy]=vals[elName];
+  g(sx).value=Math.round(p.x);g(sy).value=Math.round(p.y);
+  sv(vx,Math.round(p.x));sv(vy,Math.round(p.y));
+}
+
+const ov=g('overlay');
+ov.style.position='absolute';ov.style.top='0';ov.style.left='0';
+
+ov.addEventListener('mousedown',onDown);
+ov.addEventListener('touchstart',onDown,{passive:false});
+
+function onDown(e){
+  e.preventDefault();
+  const {x,y}=canvasCoords(e);
+  const hit=hitTest(x,y);
+  if(hit){
+    D.active=true;D.el=hit;
+    D.ox=P[hit].x;D.oy=P[hit].y;
+    D.startX=x;D.startY=y;
+    ov.style.cursor='grabbing';
+    const names={logo:'Logo',accroche:'Accroche',formation:'Formation',date:'Date & Lieu',photo:'Photo',contact:'Contact'};
+    const si=g('selected-info');si.textContent='✋ '+names[hit];si.style.display='';
+    drawOverlay();
+  }else{
+    D.el=null;
+    g('selected-info').style.display='none';
+    drawOverlay();
+  }
+}
+
+document.addEventListener('mousemove',onMove);
+document.addEventListener('touchmove',onMove,{passive:false});
+function onMove(e){
+  if(!D.active)return;
+  e.preventDefault();
+  const {x,y}=canvasCoords(e);
+  const dx=x-D.startX,dy=y-D.startY;
+  P[D.el].x=Math.round(D.ox+dx);
+  P[D.el].y=Math.round(D.oy+dy);
+  syncSliders(D.el);
+  render();
+}
+
+document.addEventListener('mouseup',onUp);
+document.addEventListener('touchend',onUp);
+function onUp(){
+  if(D.active){D.active=false;ov.style.cursor='default';}
+}
+
+ov.addEventListener('mousemove',e=>{
+  if(D.active)return;
+  const {x,y}=canvasCoords(e);
+  const hit=hitTest(x,y);
+  ov.style.cursor=hit?'grab':'default';
+});
+
+// ── EXPORT ────────────────────────────────────────────────────
+function exportPNG(){
+  const link=document.createElement('a');
+  link.download='apave-linkedin-'+S.W+'x'+S.H+'.png';
+  link.href=g('c').toDataURL('image/png');link.click();
+  toast('PNG téléchargé ✓');
+}
+function exportJPG(){
+  const link=document.createElement('a');
+  link.download='apave-linkedin-'+S.W+'x'+S.H+'.jpg';
+  link.href=g('c').toDataURL('image/jpeg',0.95);link.click();
+  toast('JPEG téléchargé ✓');
+}
+function resetAll(){if(confirm('Réinitialiser ?'))location.reload();}
+
+function toast(msg){
+  const t=g('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
